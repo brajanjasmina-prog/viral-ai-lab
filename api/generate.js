@@ -13,13 +13,13 @@ module.exports = async (req, res) => {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'API ključ nije podešen u Vercel environment promenljivama.' });
+      return res.status(500).json({ error: 'API ključ nije podešen.' });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Koristimo stabilnu i proverenu inicijalizaciju modela
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Koristimo aktuelni i podržani model umesto starog 1.5-flash
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     const result = await model.generateContent(prompt);
     const response = await result.response;

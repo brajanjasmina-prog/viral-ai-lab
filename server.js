@@ -17,8 +17,8 @@ app.post('/api/generate', async (req, res) => {
       return res.status(400).json({ error: 'Prompt je obavezan!' });
     }
 
-    // Koristimo stabilni model gemini-1.5-flash
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Koristimo gemini-pro model koji je u potpunosti podržan
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();

@@ -1,7 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async (req, res) => {
-  // Dozvoljavamo samo POST metode
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -14,13 +13,13 @@ module.exports = async (req, res) => {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'API ključ nije podešen na Vercelu.' });
+      return res.status(500).json({ error: 'API ključ nije podešen.' });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Koristimo aktuelni i stabilni model koji je podržan
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // Koristimo stabilni model gemini-pro koji sigurno radi bez greške
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     
     const result = await model.generateContent(prompt);
     const response = await result.response;

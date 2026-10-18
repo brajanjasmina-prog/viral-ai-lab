@@ -2,10 +2,7 @@
   "name": "viral-ai-lab",
   "version": "1.0.0",
   "description": "AI-based content generator",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
+  "main": "index.js",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "express": "^4.19.2"

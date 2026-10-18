@@ -1,7 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async (req, res) => {
-  // Dozvoljavamo samo POST zahteve
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -18,7 +17,8 @@ module.exports = async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Koristimo stabilni gemini-pro model koji pouzdano radi na v1 verziji
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     
     const result = await model.generateContent(prompt);
     const response = await result.response;

@@ -13,6 +13,8 @@ const genAI = new GoogleGenerativeAI(apiKey);
 app.post('/api/generate', async (req, res) => {
   try {
     const { prompt } = req.body;
+    // Osvježeno za Vercel deployment
+    
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt je obavezan!' });
     }

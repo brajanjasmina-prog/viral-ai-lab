@@ -1,256 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIRAL AI LAB - AI Content Generator</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0f172a;
-            color: #e2e8f0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+// Primer funkcije unutar index.html koja šalje zahtev na naš API
+async function generateScript() {
+    const promptText = document.getElementById('promptInput').value;
+    const errorDiv = document.getElementById('errorDiv');
+    const outputDiv = document.getElementById('outputDiv');
+
+    errorDiv.innerText = "";
+    outputDiv.innerText = "Generisanje u toku...";
+
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: promptText })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Došlo je do greške na serveru.');
         }
 
-        .container {
-            background-color: #1e293b;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            padding: 2rem;
-            width: 90%;
-            max-width: 600px;
-            text-align: left;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        p {
-            color: #94a3b8;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        label {
-            display: block;
-            font-size: 0.85rem;
-            color: #cbd5e1;
-            margin-bottom: 0.5rem;
-        }
-
-        select, input[type="text"], textarea {
-            width: 100%;
-            background-color: #334155;
-            border: 1px solid #475569;
-            border-radius: 6px;
-            color: white;
-            padding: 0.75rem;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        select:focus, input:focus, textarea:focus {
-            outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-
-        button {
-            width: 100%;
-            background-color: #6366f1;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 0.75rem;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: #4f46e5;
-        }
-
-        button:disabled {
-            background-color: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        #result {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: #334155;
-            border-radius: 6px;
-            border: 1px solid #475569;
-            white-space: pre-wrap;
-            display: none;
-            color: #f1f5f9;
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
-
-        .header {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            font-weight: 700;
-            font-size: 1.25rem;
-            color: #6366f1;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .header svg {
-            width: 24px;
-            height: 24px;
-        }
-
-        .nav {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            display: flex;
-            gap: 1rem;
-            font-size: 0.9rem;
-        }
-        
-        .nav a {
-            color: #94a3b8;
-            text-decoration: none;
-        }
-        .nav a:hover { color: white; }
-
-        .error {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: #7f1d1d;
-            border-radius: 6px;
-            border: 1px solid #b91c1c;
-            color: #fecaca;
-            display: none;
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-        VIRAL AI LAB
-    </div>
-    <div class="nav">
-        <a href="#">Generator</a>
-        <a href="#">Pricing</a>
-        <a href="#">Settings</a>
-    </div>
-
-    <div class="container">
-        <h1>AI Content Generator</h1>
-        <p>Create viral short-form hooks and scripts instantly.</p>
-
-        <div class="form-group">
-            <label for="platform">Platform</label>
-            <select id="platform">
-                <option value="TikTok">TikTok</option>
-                <option value="Instagram Reels">Instagram Reels</option>
-                <option value="YouTube Shorts">YouTube Shorts</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="niche">Niche / Topic</label>
-            <input type="text" id="niche" placeholder="e.g. Fitness, AI Tools, Personal Finance">
-        </div>
-
-        <div class="form-group">
-            <label for="prompt">Prompt / Instructions</label>
-            <textarea id="prompt" placeholder="What should the script be about?"></textarea>
-        </div>
-
-        <button id="generateBtn" onclick="handleGenerate()">Generate Script</button>
-
-        <div id="result"></div>
-        <div id="error" class="error"></div>
-    </div>
-
-    <script>
-        async function handleGenerate() {
-            const platform = document.getElementById('platform').value;
-            const niche = document.getElementById('niche').value;
-            const promptText = document.getElementById('prompt').value;
-            const generateBtn = document.getElementById('generateBtn');
-            const resultDiv = document.getElementById('result');
-            const errorDiv = document.getElementById('error');
-
-            if (!niche || !promptText) {
-                alert("Molimo popunite polja za nišu i prompt.");
-                return;
-            }
-
-            const fullPrompt = `
-Create a viral short-form video script.
-Platform: ${platform}
-Niche: ${niche}
-Instructions/Idea: ${promptText}
-
-Please structure the response with:
-1. A scroll-stopping hook (1-3 seconds)
-2. Engaging body content (value/story)
-3. A clear call to action (CTA)
-`;
-
-            generateBtn.disabled = true;
-            generateBtn.innerText = "Generating...";
-            resultDiv.style.display = 'none';
-            resultDiv.innerText = '';
-            errorDiv.style.display = 'none';
-            errorDiv.innerText = '';
-
-            try {
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ prompt: fullPrompt })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Greška pri komunikaciji sa serverom.');
-                }
-
-                resultDiv.innerText = data.output;
-                resultDiv.style.display = 'block';
-
-            } catch (error) {
-                console.error('Error:', error);
-                errorDiv.innerText = "Greška: " + error.message;
-                errorDiv.style.display = 'block';
-            } finally {
-                generateBtn.disabled = false;
-                generateBtn.innerText = "Generate Script";
-            }
-        }
-    </script>
-</body>
-</html>
+        // Prikazujemo dobijeni tekst na ekranu
+        outputDiv.innerText = data.output;
+    } catch (err) {
+        errorDiv.innerText = "Greška: " + err.message;
+        outputDiv.innerText = "";
+    }
+}

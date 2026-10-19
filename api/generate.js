@@ -14,8 +14,8 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: 'API ključ nije podešen.' });
     }
 
-    // Koristimo gemini-pro koji je stabilan i podržan na ovom endpointu
-    const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    // Koristimo stabilan gemini-3.8-flash model
+    const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

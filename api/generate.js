@@ -1,6 +1,5 @@
-const { GoogleGenAI } = require('@google/genai');
-
 module.exports = async (req, res) => {
+  // Dozvoljavamo samo POST metode
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -13,20 +12,39 @@ module.exports = async (req, res) => {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'API ključ nije podešen.' });
+      return res.status(500).json({ error: 'API ključ nije podešen u Vercel environment promenljivama.' });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    
-    // Koristimo aktuelni stabilni model
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
+    // Koristimo stabilan i podržan gemini-2.0-flash model preko zvaničnog endpointa
+    const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ]
+      })
     });
 
-    return res.status(200).json({ output: response.text });
+    const data = await apiResponse.json();
+
+    if (!apiResponse.ok) {
+      throw new Error(data.error?.message || 'Greška sa Gemini API servisa');
+    }
+
+    // Ekstrahujemo generisani tekst odgovora
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      throw new Error('Nema odgovora od AI modela.');
+    }
+
+    return res.status(200).json({ output: text });
   } catch (error) {
-    console.error('Greška pri komunikaciji sa Gemini API:', error);
+    console.error('Serverska greška:', error);
     return res.status(500).json({ error: error.message || 'Greška na serveru' });
   }
 };

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -69,20 +69,20 @@
 <div class="wrap">
   <span class="badge">⚡ AI Studio</span>
   <h1>Viral <span>AI Lab</span></h1>
-  <p class="sub">Hookovi, skripte i captioni za videe koji se šire.</p>
+  <p class="sub">Hooks, scripts and captions for videos that spread.</p>
 
   <div class="panel">
-    <label class="l">Tema videa</label>
-    <textarea id="promptInput" rows="3" placeholder="Npr. vježbe za noge kod kuće"></textarea>
+    <label class="l">Video topic</label>
+    <textarea id="promptInput" rows="3" placeholder="e.g. home leg workout"></textarea>
     <div class="chips ideas" id="ideas" style="margin-top:10px"></div>
 
-    <label class="l">Platforma</label>
+    <label class="l">Platform</label>
     <div class="chips" id="platformChips"></div>
 
-    <label class="l">Ton</label>
+    <label class="l">Tone</label>
     <div class="chips" id="toneChips"></div>
 
-    <button class="go" id="genBtn" onclick="generateScript()">✨ Generiši</button>
+    <button class="go" id="genBtn" onclick="generateScript()">✨ Generate</button>
   </div>
 
   <div id="results"></div>
@@ -92,10 +92,10 @@
 <script>
 const PLATFORMS = ['TikTok', 'Instagram Reels', 'YouTube Shorts'];
 const TONES = [
-  ['energetic', '🔥 Energično'], ['funny', '😂 Smiješno'], ['emotional', '💖 Emotivno'],
-  ['educational', '🎓 Edukativno'], ['luxury', '✨ Elegantno']
+  ['energetic', '🔥 Energetic'], ['funny', '😂 Funny'], ['emotional', '💖 Emotional'],
+  ['educational', '🎓 Educational'], ['luxury', '✨ Elegant']
 ];
-const IDEAS = ['Vježbe za noge', 'Jutarnja rutina', 'Zdrav doručak', 'Outfit za jesen', 'Savjeti za štednju'];
+const IDEAS = ['Leg workout', 'Morning routine', 'Healthy breakfast', 'Fall outfit ideas', 'Money saving tips'];
 
 let platform = PLATFORMS[0], tone = TONES[0][0], raws = [];
 
@@ -150,19 +150,19 @@ function showResults(md) {
   parts.forEach((p, i) => {
     const nl = p.indexOf('\n');
     const hasHead = md.includes('## ') && nl > -1;
-    const title = hasHead ? p.slice(0, nl).trim() : 'Rezultat';
+    const title = hasHead ? p.slice(0, nl).trim() : 'Result';
     const body = hasHead ? p.slice(nl + 1).trim() : p;
     raws.push(body);
     const c = document.createElement('div');
     c.className = 'card';
     c.style.animationDelay = (i * 90) + 'ms';
-    c.innerHTML = '<div class="card-h"><h3>' + esc(title) + '</h3><button class="copy" data-i="' + i + '">📋 Kopiraj</button></div><div class="body">' + render(body) + '</div>';
+    c.innerHTML = '<div class="card-h"><h3>' + esc(title) + '</h3><button class="copy" data-i="' + i + '">📋 Copy</button></div><div class="body">' + render(body) + '</div>';
     box.appendChild(c);
   });
   box.querySelectorAll('.copy').forEach(b => b.onclick = () => {
     navigator.clipboard.writeText(raws[b.dataset.i]);
-    b.textContent = '✅ Kopirano';
-    setTimeout(() => b.textContent = '📋 Kopiraj', 1400);
+    b.textContent = '✅ Copied';
+    setTimeout(() => b.textContent = '📋 Copy', 1400);
   });
   box.scrollIntoView({ behavior: 'smooth' });
 }
@@ -173,7 +173,7 @@ async function generateScript() {
   const box = document.getElementById('results');
   if (!text.trim()) { document.getElementById('promptInput').focus(); return; }
 
-  btn.disabled = true; btn.textContent = 'Generišem...';
+  btn.disabled = true; btn.textContent = 'Generating...';
   box.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
   try {
     const res = await fetch('/api/generate', {
@@ -183,12 +183,12 @@ async function generateScript() {
     });
     const data = await res.json();
     if (data.output) showResults(data.output);
-    else box.innerHTML = '<div class="err">' + esc(data.error || 'Nema odgovora.') + '</div>';
+    else box.innerHTML = '<div class="err">' + esc(data.error || 'No response.') + '</div>';
   } catch (err) {
-    box.innerHTML = '<div class="err">Greška: ' + esc(err.message) + '</div>';
+    box.innerHTML = '<div class="err">Error: ' + esc(err.message) + '</div>';
   }
-  btn.disabled = false; btn.textContent = '✨ Generiši';
+  btn.disabled = false; btn.textContent = '✨ Generate';
 }
 </script>
 </body>
-</html>
+ </html>

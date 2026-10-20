@@ -1,43 +1,194 @@
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viral AI Lab</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #0f172a; color: #fff; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; background: #1e293b; padding: 20px; border-radius: 10px; }
-        textarea { width: 100%; padding: 10px; margin-top: 10px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; margin-top: 15px; padding: 12px; background: #6366f1; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-        #outputDiv { margin-top: 20px; background: #0f172a; padding: 15px; border-radius: 5px; white-space: pre-wrap; border: 1px solid #334155; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0f1f">
+<title>Viral AI Lab</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh; padding: 22px 16px 60px;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: #e8eaf6; background: #0b0f1f;
+    background-image:
+      radial-gradient(600px 400px at 90% -5%, rgba(236,72,153,.28), transparent 60%),
+      radial-gradient(600px 450px at -10% 10%, rgba(99,102,241,.32), transparent 60%);
+    background-attachment: fixed;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  .badge { display: inline-block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #f9a8d4; background: rgba(236,72,153,.12); border: 1px solid rgba(236,72,153,.3); padding: 5px 10px; border-radius: 99px; }
+  h1 { font-size: 34px; line-height: 1.1; margin: 14px 0 6px; letter-spacing: -.02em; }
+  h1 span { background: linear-gradient(90deg,#818cf8,#f472b6 60%,#fb923c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { margin: 0 0 22px; color: #9aa3c7; font-size: 15px; }
+
+  .panel { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 20px; padding: 16px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  label.l { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: #8b94bb; margin: 14px 0 8px; }
+  label.l:first-child { margin-top: 0; }
+  textarea {
+    width: 100%; padding: 14px; font-size: 16px; font-family: inherit; color: #fff; resize: none;
+    background: rgba(8,11,25,.7); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; outline: none;
+  }
+  textarea:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,.25); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 9px 14px; font-size: 14px; color: #c5cbe8; cursor: pointer; font-family: inherit;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 99px;
+  }
+  .chip.on { color: #fff; background: linear-gradient(90deg,#6366f1,#ec4899); border-color: transparent; font-weight: 600; }
+  .ideas .chip { font-size: 13px; padding: 7px 12px; color: #a5b0e0; }
+
+  .go {
+    width: 100%; margin-top: 18px; padding: 16px; font-size: 17px; font-weight: 700; color: #fff; cursor: pointer; font-family: inherit;
+    border: 0; border-radius: 14px; background: linear-gradient(90deg,#6366f1,#ec4899 70%,#fb923c);
+    box-shadow: 0 10px 30px rgba(236,72,153,.28);
+  }
+  .go:active { transform: scale(.98); }
+  .go:disabled { opacity: .65; }
+
+  #results { margin-top: 22px; display: grid; gap: 14px; }
+  .card { background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 16px; animation: up .45s ease both; }
+  @keyframes up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .card-h h3 { margin: 0; font-size: 17px; }
+  .copy { padding: 7px 12px; font-size: 13px; color: #c7d2fe; background: transparent; border: 1px solid rgba(129,140,248,.5); border-radius: 99px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .body { font-size: 15.5px; line-height: 1.6; color: #dfe3f7; }
+  .body p { margin: 8px 0; }
+  .body ul, .body ol { padding-left: 20px; margin: 8px 0; }
+  .body li { margin: 7px 0; }
+  .body b { color: #f9a8d4; }
+  .body i { color: #c7d2fe; }
+
+  .skel { height: 120px; border-radius: 18px; background: linear-gradient(100deg, rgba(255,255,255,.05) 30%, rgba(255,255,255,.13) 50%, rgba(255,255,255,.05) 70%); background-size: 300% 100%; animation: sh 1.4s infinite; }
+  @keyframes sh { from { background-position: 100% 0; } to { background-position: 0 0; } }
+  .err { color: #fca5a5; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); border-radius: 14px; padding: 14px; font-size: 15px; }
+  .foot { text-align: center; color: #6b7499; font-size: 12px; margin-top: 28px; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h2>Viral AI Lab</h2>
-        <!-- Ovo polje sada koristi standardni placeholder. Kada počneš da kucaš, on će se skloniti bez brisanja. -->
-        <textarea id="promptInput" rows="4" placeholder="Unesi temu ovde..."></textarea>
-        <button onclick="generateScript()">Generiši</button>
-        <div id="outputDiv">Rezultat će se pojaviti ovde...</div>
-    </div>
-    <script>
-        async function generateScript() {
-            const promptText = document.getElementById('promptInput').value;
-            const outputDiv = document.getElementById('outputDiv');
-            if (!promptText.trim()) { outputDiv.innerText = "Unesi prompt!"; return; }
-            outputDiv.innerText = "Generisanje...";
-            try {
-                const res = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: promptText })
-                });
-                const data = await res.json();
-                outputDiv.innerText = data.output || data.error;
-            } catch (err) {
-                outputDiv.innerText = "Greška: " + err.message;
-            }
-        }
-    </script>
+<div class="wrap">
+  <span class="badge">⚡ AI Studio</span>
+  <h1>Viral <span>AI Lab</span></h1>
+  <p class="sub">Hookovi, skripte i captioni za videe koji se šire.</p>
+
+  <div class="panel">
+    <label class="l">Tema videa</label>
+    <textarea id="promptInput" rows="3" placeholder="Npr. vježbe za noge kod kuće"></textarea>
+    <div class="chips ideas" id="ideas" style="margin-top:10px"></div>
+
+    <label class="l">Platforma</label>
+    <div class="chips" id="platformChips"></div>
+
+    <label class="l">Ton</label>
+    <div class="chips" id="toneChips"></div>
+
+    <button class="go" id="genBtn" onclick="generateScript()">✨ Generiši</button>
+  </div>
+
+  <div id="results"></div>
+  <div class="foot">Viral AI Lab</div>
+</div>
+
+<script>
+const PLATFORMS = ['TikTok', 'Instagram Reels', 'YouTube Shorts'];
+const TONES = [
+  ['energetic', '🔥 Energično'], ['funny', '😂 Smiješno'], ['emotional', '💖 Emotivno'],
+  ['educational', '🎓 Edukativno'], ['luxury', '✨ Elegantno']
+];
+const IDEAS = ['Vježbe za noge', 'Jutarnja rutina', 'Zdrav doručak', 'Outfit za jesen', 'Savjeti za štednju'];
+
+let platform = PLATFORMS[0], tone = TONES[0][0], raws = [];
+
+function chips(id, items, getVal, getLabel, onPick, isOn) {
+  const box = document.getElementById(id);
+  box.innerHTML = '';
+  items.forEach(it => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (isOn && isOn(it) ? ' on' : '');
+    b.textContent = getLabel(it);
+    b.onclick = () => { onPick(getVal(it)); if (isOn) drawChips(); };
+    box.appendChild(b);
+  });
+}
+function drawChips() {
+  chips('platformChips', PLATFORMS, p => p, p => p, v => platform = v, p => p === platform);
+  chips('toneChips', TONES, t => t[0], t => t[1], v => tone = v, t => t[0] === tone);
+}
+drawChips();
+chips('ideas', IDEAS, i => i, i => i, v => { document.getElementById('promptInput').value = v; });
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function inline(s) { return s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>'); }
+
+function render(md) {
+  let out = '', list = '';
+  const close = () => { if (list) { out += '</' + list + '>'; list = ''; } };
+  for (const raw of md.split('\n')) {
+    const e = esc(raw);
+    const ul = e.match(/^\s*[*-]\s+(.*)$/), ol = e.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (ul || ol) {
+      const t = ul ? 'ul' : 'ol';
+      if (list !== t) { close(); out += '<' + t + '>'; list = t; }
+      out += '<li>' + inline((ul || ol)[1]) + '</li>';
+      continue;
+    }
+    close();
+    if (/^#{1,6}\s/.test(e)) out += '<p><b>' + inline(e.replace(/^#{1,6}\s/, '')) + '</b></p>';
+    else if (/^-{3,}$/.test(e.trim())) continue;
+    else if (e.trim()) out += '<p>' + inline(e) + '</p>';
+  }
+  close();
+  return out;
+}
+
+function showResults(md) {
+  const box = document.getElementById('results');
+  box.innerHTML = '';
+  raws = [];
+  let parts = md.split(/^##\s+/m).map(s => s.trim()).filter(Boolean);
+  if (parts.length === 0) parts = [md];
+  parts.forEach((p, i) => {
+    const nl = p.indexOf('\n');
+    const hasHead = md.includes('## ') && nl > -1;
+    const title = hasHead ? p.slice(0, nl).trim() : 'Rezultat';
+    const body = hasHead ? p.slice(nl + 1).trim() : p;
+    raws.push(body);
+    const c = document.createElement('div');
+    c.className = 'card';
+    c.style.animationDelay = (i * 90) + 'ms';
+    c.innerHTML = '<div class="card-h"><h3>' + esc(title) + '</h3><button class="copy" data-i="' + i + '">📋 Kopiraj</button></div><div class="body">' + render(body) + '</div>';
+    box.appendChild(c);
+  });
+  box.querySelectorAll('.copy').forEach(b => b.onclick = () => {
+    navigator.clipboard.writeText(raws[b.dataset.i]);
+    b.textContent = '✅ Kopirano';
+    setTimeout(() => b.textContent = '📋 Kopiraj', 1400);
+  });
+  box.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function generateScript() {
+  const text = document.getElementById('promptInput').value;
+  const btn = document.getElementById('genBtn');
+  const box = document.getElementById('results');
+  if (!text.trim()) { document.getElementById('promptInput').focus(); return; }
+
+  btn.disabled = true; btn.textContent = 'Generišem...';
+  box.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: text, platform, tone })
+    });
+    const data = await res.json();
+    if (data.output) showResults(data.output);
+    else box.innerHTML = '<div class="err">' + esc(data.error || 'Nema odgovora.') + '</div>';
+  } catch (err) {
+    box.innerHTML = '<div class="err">Greška: ' + esc(err.message) + '</div>';
+  }
+  btn.disabled = false; btn.textContent = '✨ Generiši';
+}
+</script>
 </body>
-    </html>
+</html>

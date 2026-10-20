@@ -32,14 +32,13 @@ Be specific, punchy and concrete. Avoid generic advice.`;
 
     const userText = `Topic: ${prompt}\nPlatform: ${platform || 'TikTok'}\nTone: ${tone || 'energetic'}`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
     const body = JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ parts: [{ text: userText }] }],
       generationConfig: {
         temperature: 1,
-        maxOutputTokens: 1200,
-        thinkingConfig: { thinkingLevel: 'low' }
+        maxOutputTokens: 1200
       }
     });
 

@@ -4,7 +4,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { prompt, platform, tone } = req.body;
+    const { prompt, platform, tone, length } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: 'Topic is required.' });
     }
@@ -14,13 +14,16 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: 'API key is not configured.' });
     }
 
+    const secs = [15, 30, 60].includes(Number(length)) ? Number(length) : 30;
+    const scenes = secs === 15 ? 2 : secs === 30 ? 3 : 5;
+
     const system = `You are a viral short-form video strategist. Always reply in English, whatever language the topic is written in. No intro and no outro, output only this structure:
 
 ## 🎣 5 Hooks
 Five scroll-stopping opening lines (max 12 words each, for the first 3 seconds). Numbered list.
 
-## 🎬 Script (20-30 sec)
-Maximum 3 scenes. For each scene: **Visual:** and **Voiceover:**. Keep every scene to 1-2 short sentences.
+## 🎬 Script (${secs} sec)
+Maximum ${scenes} scenes, timed to fit ${secs} seconds. For each scene: **Visual:** and **Voiceover:**. Keep every scene to 1-2 short sentences.
 
 ## 📣 Call to Action
 One strong CTA line.
@@ -30,7 +33,7 @@ A short caption and 8 relevant hashtags.
 
 Be specific, punchy and concrete. Avoid generic advice.`;
 
-    const userText = `Topic: ${prompt}\nPlatform: ${platform || 'TikTok'}\nTone: ${tone || 'energetic'}`;
+    const userText = `Topic: ${prompt}\nPlatform: ${platform || 'TikTok'}\nTone: ${tone || 'energetic'}\nVideo length: ${secs} seconds`;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
     const body = JSON.stringify({
@@ -38,7 +41,7 @@ Be specific, punchy and concrete. Avoid generic advice.`;
       contents: [{ parts: [{ text: userText }] }],
       generationConfig: {
         temperature: 1,
-        maxOutputTokens: 1200
+        maxOutputTokens: secs === 60 ? 2000 : 1200
       }
     });
 

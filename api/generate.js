@@ -4,7 +4,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { prompt } = req.body;
+    const { prompt, platform, tone } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt je obavezan!' });
     }
@@ -14,17 +14,31 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: 'API ključ nije podešen.' });
     }
 
+    const system = `You are a viral short-form video strategist. Reply in the same language the topic is written in. No intro and no outro, output only this structure:
+
+## 🎣 5 Hooks
+Five scroll-stopping opening lines (max 12 words each, first 3 seconds).
+
+## 🎬 Script (30-40 sec)
+Scene-by-scene. For each scene: **Visual:** and **Voiceover:**.
+
+## 📣 Call to action
+One strong CTA line.
+
+## ✍️ Caption + hashtags
+A short caption and 8 relevant hashtags.
+
+Be specific, punchy and concrete. Avoid generic advice.`;
+
+    const userText = `Topic: ${prompt}\nPlatform: ${platform || 'TikTok'}\nTone: ${tone || 'energetic'}`;
+
     const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }]
-          }
-        ]
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ parts: [{ text: userText }] }],
+        generationConfig: { temperature: 1 }
       })
     });
 

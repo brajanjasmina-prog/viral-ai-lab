@@ -59,9 +59,19 @@
   .body b { color: #f9a8d4; }
   .body i { color: #c7d2fe; }
 
+  .regen { width: 100%; padding: 14px; font-size: 16px; font-weight: 600; color: #c7d2fe; background: transparent; border: 1px solid rgba(129,140,248,.55); border-radius: 14px; cursor: pointer; font-family: inherit; }
+
   .skel { height: 120px; border-radius: 18px; background: linear-gradient(100deg, rgba(255,255,255,.05) 30%, rgba(255,255,255,.13) 50%, rgba(255,255,255,.05) 70%); background-size: 300% 100%; animation: sh 1.4s infinite; }
   @keyframes sh { from { background-position: 100% 0; } to { background-position: 0 0; } }
   .err { color: #fca5a5; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); border-radius: 14px; padding: 14px; font-size: 15px; }
+
+  #history { margin-top: 26px; }
+  .hist-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .hist-h h2 { margin: 0; font-size: 16px; color: #c5cbe8; }
+  .clear { background: none; border: 0; color: #8b94bb; font-size: 13px; cursor: pointer; font-family: inherit; text-decoration: underline; }
+  .hist-item { width: 100%; text-align: left; margin-bottom: 8px; padding: 12px 14px; color: #e8eaf6; font-family: inherit; cursor: pointer; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; }
+  .hist-item b { display: block; font-size: 15px; margin-bottom: 3px; }
+  .hist-item span { font-size: 12.5px; color: #8b94bb; }
   .foot { text-align: center; color: #6b7499; font-size: 12px; margin-top: 28px; }
 </style>
 </head>
@@ -82,10 +92,14 @@
     <label class="l">Tone</label>
     <div class="chips" id="toneChips"></div>
 
+    <label class="l">Video length</label>
+    <div class="chips" id="lengthChips"></div>
+
     <button class="go" id="genBtn" onclick="generateScript()">✨ Generate</button>
   </div>
 
   <div id="results"></div>
+  <div id="history"></div>
   <div class="foot">Viral AI Lab</div>
 </div>
 
@@ -95,9 +109,11 @@ const TONES = [
   ['energetic', '🔥 Energetic'], ['funny', '😂 Funny'], ['emotional', '💖 Emotional'],
   ['educational', '🎓 Educational'], ['luxury', '✨ Elegant']
 ];
+const LENGTHS = [15, 30, 60];
 const IDEAS = ['Leg workout', 'Morning routine', 'Healthy breakfast', 'Fall outfit ideas', 'Money saving tips'];
+const HKEY = 'viral_ai_lab_history';
 
-let platform = PLATFORMS[0], tone = TONES[0][0], raws = [];
+let platform = PLATFORMS[0], tone = TONES[0][0], len = 30, raws = [];
 
 function chips(id, items, getVal, getLabel, onPick, isOn) {
   const box = document.getElementById(id);
@@ -113,6 +129,7 @@ function chips(id, items, getVal, getLabel, onPick, isOn) {
 function drawChips() {
   chips('platformChips', PLATFORMS, p => p, p => p, v => platform = v, p => p === platform);
   chips('toneChips', TONES, t => t[0], t => t[1], v => tone = v, t => t[0] === tone);
+  chips('lengthChips', LENGTHS, l => l, l => l + ' sec', v => len = v, l => l === len);
 }
 drawChips();
 chips('ideas', IDEAS, i => i, i => i, v => { document.getElementById('promptInput').value = v; });
@@ -141,7 +158,7 @@ function render(md) {
   return out;
 }
 
-function showResults(md, live) {
+function showResults(md) {
   const box = document.getElementById('results');
   box.innerHTML = '';
   raws = [];
@@ -155,8 +172,7 @@ function showResults(md, live) {
     raws.push(body);
     const c = document.createElement('div');
     c.className = 'card';
-    if (live) c.style.animation = 'none';
-    else c.style.animationDelay = (i * 90) + 'ms';
+    c.style.animationDelay = (i * 90) + 'ms';
     c.innerHTML = '<div class="card-h"><h3>' + esc(title) + '</h3><button class="copy" data-i="' + i + '">📋 Copy</button></div><div class="body">' + render(body) + '</div>';
     box.appendChild(c);
   });
@@ -165,7 +181,61 @@ function showResults(md, live) {
     b.textContent = '✅ Copied';
     setTimeout(() => b.textContent = '📋 Copy', 1400);
   });
+  const r = document.createElement('button');
+  r.className = 'regen';
+  r.textContent = '🔄 Regenerate';
+  r.onclick = generateScript;
+  box.appendChild(r);
 }
+
+/* ---------- History (saved on this device) ---------- */
+function getHist() {
+  try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch (e) { return []; }
+}
+function saveHist(entry) {
+  try {
+    const h = [entry, ...getHist()].slice(0, 10);
+    localStorage.setItem(HKEY, JSON.stringify(h));
+  } catch (e) {}
+  renderHist();
+}
+function clearHist() {
+  try { localStorage.removeItem(HKEY); } catch (e) {}
+  renderHist();
+}
+function renderHist() {
+  const box = document.getElementById('history');
+  const h = getHist();
+  box.innerHTML = '';
+  if (!h.length) return;
+  const head = document.createElement('div');
+  head.className = 'hist-h';
+  head.innerHTML = '<h2>🕘 Recent</h2>';
+  const clr = document.createElement('button');
+  clr.className = 'clear';
+  clr.textContent = 'Clear all';
+  clr.onclick = clearHist;
+  head.appendChild(clr);
+  box.appendChild(head);
+  h.forEach(item => {
+    const b = document.createElement('button');
+    b.className = 'hist-item';
+    const t = document.createElement('b');
+    t.textContent = item.topic;
+    const m = document.createElement('span');
+    m.textContent = item.platform + ' · ' + item.len + ' sec · ' + new Date(item.ts).toLocaleDateString();
+    b.appendChild(t); b.appendChild(m);
+    b.onclick = () => {
+      document.getElementById('promptInput').value = item.topic;
+      platform = item.platform; tone = item.tone; len = item.len;
+      drawChips();
+      showResults(item.out);
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    };
+    box.appendChild(b);
+  });
+}
+renderHist();
 
 async function generateScript() {
   const text = document.getElementById('promptInput').value;
@@ -180,23 +250,16 @@ async function generateScript() {
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: text, platform, tone })
+      body: JSON.stringify({ prompt: text, platform, tone, length: len })
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
       throw new Error(d.error || 'Request failed');
     }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let full = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      full += decoder.decode(value, { stream: true });
-      showResults(full, true);
-    }
+    const full = await res.text();
     if (!full.trim()) throw new Error('No response from the AI model.');
-    showResults(full, false);
+    showResults(full);
+    saveHist({ topic: text.trim(), platform, tone, len, out: full, ts: Date.now() });
   } catch (err) {
     box.innerHTML = '<div class="err">' + esc(err.message) + '</div>';
   }

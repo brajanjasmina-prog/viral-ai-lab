@@ -32,7 +32,7 @@ Be specific, punchy and concrete. Avoid generic advice.`;
 
     const userText = `Topic: ${prompt}\nPlatform: ${platform || 'TikTok'}\nTone: ${tone || 'energetic'}`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
     const body = JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ parts: [{ text: userText }] }],
@@ -43,31 +43,53 @@ Be specific, punchy and concrete. Avoid generic advice.`;
       }
     });
 
-    let apiResponse, data;
-    for (let attempt = 1; attempt <= 4; attempt++) {
-      apiResponse = await fetch(url, {
+    let r;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body
       });
-      data = await apiResponse.json();
-      if (apiResponse.ok) break;
-      if (![429, 500, 503].includes(apiResponse.status) || attempt === 4) break;
-      await new Promise(r => setTimeout(r, attempt * 1500));
+      if (r.ok) break;
+      if (![429, 500, 503].includes(r.status) || attempt === 3) break;
+      await new Promise(resolve => setTimeout(resolve, attempt * 1000));
     }
 
-    if (!apiResponse.ok) {
-      throw new Error(data.error?.message || 'Gemini API error');
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      return res.status(r.status).json({ error: d.error?.message || 'Gemini API error' });
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      throw new Error('No response from the AI model.');
-    }
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
 
-    return res.status(200).json({ output: text });
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const json = line.slice(5).trim();
+        if (!json) continue;
+        try {
+          const obj = JSON.parse(json);
+          const text = (obj.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+          if (text) res.write(text);
+        } catch (e) {}
+      }
+    }
+    res.end();
   } catch (error) {
     console.error('Server error:', error);
-    return res.status(500).json({ error: error.message || 'Server error' });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: error.message || 'Server error' });
+    }
+    res.end();
   }
 };

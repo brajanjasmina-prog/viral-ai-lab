@@ -141,7 +141,7 @@ function render(md) {
   return out;
 }
 
-function showResults(md) {
+function showResults(md, live) {
   const box = document.getElementById('results');
   box.innerHTML = '';
   raws = [];
@@ -155,7 +155,8 @@ function showResults(md) {
     raws.push(body);
     const c = document.createElement('div');
     c.className = 'card';
-    c.style.animationDelay = (i * 90) + 'ms';
+    if (live) c.style.animation = 'none';
+    else c.style.animationDelay = (i * 90) + 'ms';
     c.innerHTML = '<div class="card-h"><h3>' + esc(title) + '</h3><button class="copy" data-i="' + i + '">📋 Copy</button></div><div class="body">' + render(body) + '</div>';
     box.appendChild(c);
   });
@@ -164,7 +165,6 @@ function showResults(md) {
     b.textContent = '✅ Copied';
     setTimeout(() => b.textContent = '📋 Copy', 1400);
   });
-  box.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function generateScript() {
@@ -175,20 +175,33 @@ async function generateScript() {
 
   btn.disabled = true; btn.textContent = 'Generating...';
   box.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+  box.scrollIntoView({ behavior: 'smooth' });
   try {
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: text, platform, tone })
     });
-    const data = await res.json();
-    if (data.output) showResults(data.output);
-    else box.innerHTML = '<div class="err">' + esc(data.error || 'No response.') + '</div>';
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.error || 'Request failed');
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      full += decoder.decode(value, { stream: true });
+      showResults(full, true);
+    }
+    if (!full.trim()) throw new Error('No response from the AI model.');
+    showResults(full, false);
   } catch (err) {
-    box.innerHTML = '<div class="err">Error: ' + esc(err.message) + '</div>';
+    box.innerHTML = '<div class="err">' + esc(err.message) + '</div>';
   }
   btn.disabled = false; btn.textContent = '✨ Generate';
 }
 </script>
 </body>
- </html>
+</html>

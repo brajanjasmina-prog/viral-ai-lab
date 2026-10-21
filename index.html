@@ -25,11 +25,13 @@
   .panel { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 20px; padding: 16px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
   label.l { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: #8b94bb; margin: 14px 0 8px; }
   label.l:first-child { margin-top: 0; }
-  textarea {
+  textarea, input.txt {
     width: 100%; padding: 14px; font-size: 16px; font-family: inherit; color: #fff; resize: none;
     background: rgba(8,11,25,.7); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; outline: none;
   }
-  textarea:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,.25); }
+  textarea:focus, input.txt:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,.25); }
+  .lic-note { margin: 8px 2px 0; font-size: 13px; color: #8b94bb; }
+  .lic-note a { color: #f9a8d4; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .chip {
     padding: 9px 14px; font-size: 14px; color: #c5cbe8; cursor: pointer; font-family: inherit;
@@ -82,6 +84,10 @@
   <p class="sub">Hooks, scripts and captions for videos that spread.</p>
 
   <div class="panel">
+    <label class="l">License key</label>
+    <input class="txt" id="licenseInput" type="text" placeholder="Paste your license key" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="lic-note">No key yet? <a id="buyLink" href="#" target="_blank" rel="noopener">Get access</a></p>
+
     <label class="l">Video topic</label>
     <textarea id="promptInput" rows="3" placeholder="e.g. home leg workout"></textarea>
     <div class="chips ideas" id="ideas" style="margin-top:10px"></div>
@@ -104,6 +110,9 @@
 </div>
 
 <script>
+// Change this to your Gumroad product link
+const BUY_URL = 'https://siennavance8.gumroad.com/l/qpgkyd';
+
 const PLATFORMS = ['TikTok', 'Instagram Reels', 'YouTube Shorts'];
 const TONES = [
   ['energetic', '🔥 Energetic'], ['funny', '😂 Funny'], ['emotional', '💖 Emotional'],
@@ -112,8 +121,17 @@ const TONES = [
 const LENGTHS = [15, 30, 60];
 const IDEAS = ['Leg workout', 'Morning routine', 'Healthy breakfast', 'Fall outfit ideas', 'Money saving tips'];
 const HKEY = 'viral_ai_lab_history';
+const LKEY = 'viral_ai_lab_license';
 
 let platform = PLATFORMS[0], tone = TONES[0][0], len = 30, raws = [];
+
+document.getElementById('buyLink').href = BUY_URL;
+
+const licInput = document.getElementById('licenseInput');
+try { licInput.value = localStorage.getItem(LKEY) || ''; } catch (e) {}
+licInput.addEventListener('input', () => {
+  try { localStorage.setItem(LKEY, licInput.value.trim()); } catch (e) {}
+});
 
 function chips(id, items, getVal, getLabel, onPick, isOn) {
   const box = document.getElementById(id);
@@ -239,8 +257,15 @@ renderHist();
 
 async function generateScript() {
   const text = document.getElementById('promptInput').value;
+  const licenseKey = licInput.value.trim();
   const btn = document.getElementById('genBtn');
   const box = document.getElementById('results');
+
+  if (!licenseKey) {
+    box.innerHTML = '<div class="err">Enter your license key first.</div>';
+    licInput.focus();
+    return;
+  }
   if (!text.trim()) { document.getElementById('promptInput').focus(); return; }
 
   btn.disabled = true; btn.textContent = 'Generating...';
@@ -250,7 +275,7 @@ async function generateScript() {
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: text, platform, tone, length: len })
+      body: JSON.stringify({ prompt: text, platform, tone, length: len, licenseKey })
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));

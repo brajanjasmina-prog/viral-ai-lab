@@ -4,7 +4,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { prompt, platform, tone, length } = req.body;
+    const { prompt, platform, tone, length, licenseKey } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: 'Topic is required.' });
     }
@@ -13,6 +13,44 @@ module.exports = async (req, res) => {
     if (!apiKey) {
       return res.status(500).json({ error: 'API key is not configured.' });
     }
+
+    // ---- License check ----
+    const key = String(licenseKey || '').trim();
+    if (!key) {
+      return res.status(401).json({ error: 'Enter your license key to generate.' });
+    }
+
+    const ownerKey = process.env.OWNER_KEY;
+    const isOwner = ownerKey && key === ownerKey;
+
+    if (!isOwner) {
+      const productId = process.env.GUMROAD_PRODUCT_ID;
+      if (!productId) {
+        return res.status(500).json({ error: 'Licensing is not configured.' });
+      }
+      const v = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          product_id: productId,
+          license_key: key,
+          increment_uses_count: 'false'
+        }),
+        signal: AbortSignal.timeout(10000)
+      });
+      const vd = await v.json().catch(() => ({}));
+      const p = vd.purchase || {};
+      const invalid =
+        !vd.success ||
+        p.refunded ||
+        p.chargebacked ||
+        p.subscription_ended_at ||
+        p.subscription_failed_at;
+      if (invalid) {
+        return res.status(401).json({ error: 'Invalid or expired license key.' });
+      }
+    }
+    // ---- End license check ----
 
     const secs = [15, 30, 60].includes(Number(length)) ? Number(length) : 30;
     const scenes = secs === 15 ? 2 : secs === 30 ? 3 : 5;
